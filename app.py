@@ -31,7 +31,7 @@ st.markdown(
 st.title("🎾 Lagos Tennis Connect")
 st.write(
     "Welcome to Lagos' premier tennis community, court booking, coaching,"
-    " matchmaking, and support staff hub!"
+    " matchmaking, score predictions, and support staff hub!"
 )
 
 # Database files
@@ -56,7 +56,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "👥 Player Directory",
     "🎾 Book a Court",
     "👨‍🏫 Coach Directory",
-    "🤝 Matchmaking Board",
+    "⚔️ Match & Predictions",
     "⚖️ Umpires & Staff",
     "🔒 Privacy Policy",
 ])
@@ -114,7 +114,6 @@ with tab1:
       if full_name == "" or phone_number == "":
         st.error("Please provide your name and phone number.")
       else:
-        # Save uploaded profile picture if provided
         photo_filename = "default.png"
         if profile_photo is not None:
           photo_filename = (
@@ -159,7 +158,7 @@ with tab1:
             f"Welcome, {full_name}! Your complete profile is now registered."
         )
 
-# --- TAB 2: ENHANCED PLAYER DIRECTORY WITH DROPDOWN PROFILE CARDS ---
+# --- TAB 2: ENHANCED PLAYER DIRECTORY ---
 with tab2:
   st.subheader("Registered Player Community Directory")
 
@@ -171,7 +170,6 @@ with tab2:
       else:
         st.metric(label="Total Registered Players in Lagos", value=len(df))
 
-        # --- PROFILE CARDS SECTION VIA DROPDOWN ---
         st.markdown("### 🔍 View Player Detailed Profile")
         player_names = df["Full Name"].dropna().tolist()
 
@@ -182,7 +180,6 @@ with tab2:
         if selected_player:
           player_data = df[df["Full Name"] == selected_player].iloc[0]
 
-          # Profile Display Card
           with st.container():
             st.markdown("---")
             p_col1, p_col2 = st.columns([1, 2])
@@ -232,7 +229,6 @@ with tab2:
 
         st.markdown("---")
         st.markdown("### 📋 Full Community List")
-        # Display summarized table view below
         cols_to_show = [
             col
             for col in [
@@ -334,7 +330,7 @@ with tab3:
   else:
     st.info("No bookings recorded yet.")
 
-# --- TAB 4: COACH DIRECTORY & FEE REGULATION TRACKER ---
+# --- TAB 4: COACH DIRECTORY ---
 with tab4:
   st.subheader("Verified Lagos Coaches & Fee Regulation")
   st.warning(
@@ -397,16 +393,11 @@ with tab4:
 
           st.success(
               f"🎉 Congratulations Coach {coach_name}! Your rates comply with"
-              " our fee regulation policy and you are now listed in the"
-              " directory."
+              " our fee regulation policy."
           )
 
   st.markdown("---")
   st.subheader("📋 Regulated Coach Directory")
-  st.write(
-      "All coaches listed below are verified and strictly compliant with our"
-      " fair pricing policy."
-  )
 
   if os.path.exists(COACHES_CSV) and os.path.getsize(COACHES_CSV) > 0:
     try:
@@ -424,50 +415,80 @@ with tab4:
   else:
     st.info("No verified coaches recorded yet.")
 
-# --- TAB 5: MATCHMAKING BOARD ---
+# --- TAB 5: MATCHMAKING, MATCH FORMATS & SCORE PREDICTIONS ---
 with tab5:
-  st.subheader("Matchmaking & Hitting Partner Board")
+  st.subheader("⚔️ Matchmaking, Challenge & Prediction Center")
   st.write(
-      "Looking for a match or hitting session this week? Post an open challenge"
-      " or find a partner!"
+      "Set up your match, choose your game format, assign an Umpire/Ball Boy,"
+      " and predict your winning score!"
   )
 
-  with st.expander("➕ Post a Match Request / Challenge"):
-    with st.form("match_form"):
-      challenger_name = st.text_input("Your Full Name:")
-      challenger_phone = st.text_input("Your WhatsApp / Phone Number:")
+  # Fetch registered Umpires & Staff for assignment
+  umpire_options = ["None / Self-Officiated"]
+  crew_options = ["None"]
 
-      match_type = st.selectbox(
-          "Match Type:",
-          [
-              "Singles Competitive Match",
-              "Doubles Partner Needed",
-              "Casual Rally / Hitting Session",
-          ],
-      )
+  if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
+    try:
+      s_data = pd.read_csv(STAFF_CSV)
+      umpires = s_data[s_data["Role"] == "Certified Umpire"][
+          "Staff Name"
+      ].tolist()
+      crews = s_data[s_data["Role"] == "Ball Boy / Girl Crew"][
+          "Staff Name"
+      ].tolist()
 
-      preferred_location = st.selectbox(
-          "Preferred Venue / Area:",
-          [
-              "Ikoyi Club",
-              "Lagos Lawn Tennis Club",
-              "Lekki Phase 1 Courts",
-              "VGC Courts",
-              "National Stadium Surulere",
-          ],
-      )
+      if umpires:
+        umpire_options.extend(umpires)
+      if crews:
+        crew_options.extend(crews)
+    except Exception:
+      pass
 
-      match_date = st.date_input("Preferred Date:")
+  with st.expander("🔥 Post a Match Challenge & Predict Score", expanded=True):
+    with st.form("match_challenge_form"):
+      c1, c2 = st.columns(2)
 
-      extra_notes = st.text_input(
-          "Additional Notes (e.g., 'Available around 7 AM for a fast rally'):"
-      )
+      with c1:
+        player_1 = st.text_input("Player 1 (Challenger):")
+        player_2 = st.text_input("Player 2 (Opponent, e.g., Duke):")
+        court_venue = st.selectbox(
+            "Agreed Court Venue:",
+            [
+                "Ikoyi Club 1938",
+                "Lagos Lawn Tennis Club",
+                "Lekki Peninsula Tennis Courts",
+                "National Stadium Surulere",
+                "VGC Tennis Courts",
+            ],
+        )
+        match_date = st.date_input("Match Date:")
 
-      match_submit = st.form_submit_button("Post Match Request")
+      with c2:
+        game_format = st.selectbox(
+            "Select Match Format:",
+            [
+                "1 Set (First to 6 Games, Tie-Break at 6-6)",
+                "Best of 3 Sets (Full Match, Games of 6)",
+                "Fast4 Format (First to 4 Games, Short Sets)",
+                "Game of 4 (Pro Set)",
+                "10-Point Super Tie-Break Match",
+            ],
+        )
 
-      if match_submit:
-        if challenger_name == "" or challenger_phone == "":
-          st.error("Please enter your name and phone number.")
+        assigned_umpire = st.selectbox("Assigned Umpire:", umpire_options)
+        assigned_ballboy = st.selectbox("Assigned Ball Boy/Crew:", crew_options)
+
+        predicted_score = st.text_input(
+            "Predicted Score (e.g., '6-0 (6 Luv)', '6-4 6-2', '4-1 4-2'):",
+            placeholder="6-0 (6 Luv)",
+        )
+
+      challenger_phone = st.text_input("Challenger WhatsApp / Phone Number:")
+      challenge_submit = st.form_submit_button("Submit Match & Prediction")
+
+      if challenge_submit:
+        if player_1 == "" or player_2 == "":
+          st.error("Please enter both player names.")
         else:
           m_exists = os.path.exists(MATCHES_CSV)
           m_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -477,55 +498,71 @@ with tab5:
             if not m_exists:
               m_writer.writerow([
                   "Timestamp",
-                  "Player Name",
-                  "Match Type",
-                  "Location",
+                  "Player 1",
+                  "Player 2",
+                  "Venue",
                   "Date",
-                  "Notes",
+                  "Match Format",
+                  "Assigned Umpire",
+                  "Assigned Ball Boy",
+                  "Predicted Score",
                   "Phone",
               ])
             m_writer.writerow([
                 m_timestamp,
-                challenger_name,
-                match_type,
-                preferred_location,
+                player_1,
+                player_2,
+                court_venue,
                 str(match_date),
-                extra_notes,
+                game_format,
+                assigned_umpire,
+                assigned_ballboy,
+                predicted_score,
                 challenger_phone,
             ])
 
           st.success(
-              "Success! Your match request has been posted to the community"
-              " board. 🎾"
+              f"🔥 Challenge Locked In! {player_1} vs {player_2} at"
+              f" {court_venue}. Predicted Score: {predicted_score}!"
           )
 
   st.markdown("---")
-  st.subheader("🔥 Live Open Matches & Hitting Requests")
+  st.subheader("📊 Upcoming Fixtures & Predictions Board")
 
   if os.path.exists(MATCHES_CSV) and os.path.getsize(MATCHES_CSV) > 0:
     try:
       m_df = pd.read_csv(MATCHES_CSV)
       if m_df.empty:
-        st.info("No open match requests right now. Be the first to post one!")
+        st.info("No match predictions posted yet. Challenge a player above!")
       else:
-        st.metric(label="Active Open Challenges", value=len(m_df))
-        st.dataframe(
-            m_df[
-                [
-                    "Player Name",
-                    "Match Type",
-                    "Location",
-                    "Date",
-                    "Notes",
-                    "Phone",
-                ]
-            ],
-            use_container_width=True,
-        )
-    except pd.errors.EmptyDataError:
-      st.info("No open match requests right now. Be the first to post one!")
+        st.metric(label="Scheduled Match Challenges", value=len(m_df))
+
+        # Render Match Cards nicely
+        for idx, row in m_df.iterrows():
+          with st.container():
+            st.markdown(
+                f"### 🎾 **{row.get('Player 1', 'Player 1')}** vs"
+                f" **{row.get('Player 2', 'Opponent')}**"
+            )
+            fc1, fc2, fc3 = st.columns(3)
+            with fc1:
+              st.write(f"**📍 Venue:** {row.get('Venue', 'N/A')}")
+              st.write(f"**📅 Date:** {row.get('Date', 'N/A')}")
+            with fc2:
+              st.write(f"**⚙️ Format:** `{row.get('Match Format', 'N/A')}`")
+              st.write(
+                  f"**🎯 Predicted Score:** `{row.get('Predicted Score', 'N/A')}`"
+              )
+            with fc3:
+              st.write(f"**⚖️ Umpire:** {row.get('Assigned Umpire', 'None')}")
+              st.write(
+                  f"**🎾 Ball Crew:** {row.get('Assigned Ball Boy', 'None')}"
+              )
+            st.markdown("---")
+    except Exception as e:
+      st.error(f"Error loading fixture board: {e}")
   else:
-    st.info("No match requests recorded yet. Post yours above!")
+    st.info("No match challenges recorded yet. Post yours above!")
 
 # --- TAB 6: UMPIRES & SUPPORT STAFF ---
 with tab6:
@@ -624,11 +661,11 @@ with tab7:
 
   st.markdown("""
     ### 1. Information We Collect
-    Lagos Tennis Connect collects user-provided contact details (Full Name, Phone / WhatsApp Number, DOB, Profession, State of Origin, Profile Picture, and Bio) strictly for community matchmaking and tennis events in Lagos.
+    Lagos Tennis Connect collects user-provided contact details strictly for community matchmaking and tennis events in Lagos.
 
     ### 2. How We Use Your Data
     * To connect tennis players for matches and hitting sessions.
-    * To facilitate court reservations, coach directories, and support staff bookings.
+    * To facilitate court reservations, coach directories, match score predictions, and support staff bookings.
 
     ### 3. Data Security & Privacy
     All uploaded image assets and profile details are stored securely. We do not share or sell data to third-party advertisers.
