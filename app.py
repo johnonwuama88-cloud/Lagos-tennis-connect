@@ -725,4 +725,83 @@ with tab6:
 
   if os.path.exists(GEAR_CSV) and os.path.getsize(GEAR_CSV) > 0:
     try:
-      g_df = pd
+      g_df = pd.read_csv(GEAR_CSV)
+      if not g_df.empty:
+        st.markdown("### 📦 Available Gear & Services")
+        st.dataframe(
+            g_df[["Type", "Title", "Price", "Seller", "Location", "Phone"]],
+            use_container_width=True,
+        )
+    except Exception as e:
+      st.error(f"Error loading marketplace: {e}")
+
+# --- TAB 7: LAGOS SOCIAL CUP TOURNAMENT HUB ---
+with tab7:
+  st.subheader("🏆 Lagos Tennis Connect Social Cup")
+  st.info(
+      "🎉 **Upcoming Event:** Registration is open for the inaugural **Lagos"
+      " Tennis Connect Social Cup** hosted at Lagos Lawn Tennis Club, Onikan!"
+  )
+
+  with st.form("tournament_form"):
+    t_name = st.text_input("Full Name:")
+    t_phone = st.text_input("WhatsApp Number:")
+    t_category = st.selectbox(
+        "Tournament Category:",
+        [
+            "Men's Singles (Open)",
+            "Women's Singles (Open)",
+            "Doubles Championship",
+            "Veterans / Seniors (45+)",
+        ],
+    )
+    t_club = st.text_input("Home Club / Area:")
+
+    t_submit = st.form_submit_button("Register for Tournament")
+
+    if t_submit:
+      if t_name == "" or t_phone == "":
+        st.error("Please enter your name and phone number.")
+      else:
+        to_exists = os.path.exists(TOURNAMENT_CSV)
+        to_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        with open(
+            TOURNAMENT_CSV, mode="a", newline="", encoding="utf-8"
+        ) as to_file:
+          to_writer = csv.writer(to_file)
+          if not to_exists:
+            to_writer.writerow(
+                ["Timestamp", "Name", "Phone", "Category", "Club"]
+            )
+          to_writer.writerow([to_time, t_name, t_phone, t_category, t_club])
+        st.success(
+            f"🎉 Congratulations {t_name}! You are registered for the"
+            f" {t_category}."
+        )
+
+  if os.path.exists(TOURNAMENT_CSV) and os.path.getsize(TOURNAMENT_CSV) > 0:
+    try:
+      to_df = pd.read_csv(TOURNAMENT_CSV)
+      if not to_df.empty:
+        st.markdown("### 📋 Confirmed Tournament Entries")
+        st.dataframe(
+            to_df[["Name", "Category", "Club"]], use_container_width=True
+        )
+    except Exception as e:
+      st.error(f"Error loading tournament entries: {e}")
+
+# --- TAB 8: PRIVACY POLICY & COMPLIANCE ---
+with tab8:
+  st.subheader("🔒 Privacy Policy & Terms of Service")
+  st.write("Effective Date: October 2026 | **Lagos Tennis Connect**")
+
+  st.markdown("""
+    ### 1. Information We Collect
+    Lagos Tennis Connect collects user-provided details strictly for local community tennis coordination in Lagos.
+
+    ### 2. How We Use Your Data
+    * To facilitate player matchmaking, court bookings, ladder rankings, coach directories, and tournament entries.
+
+    ### 3. Security & Control
+    All uploaded image files and CSV databases are handled securely. Users retain full rights to update or request removal of their personal details.
+    """)
