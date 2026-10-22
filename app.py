@@ -45,13 +45,14 @@ MAX_HOURLY_RATE = 15000
 
 
 # --- NAVIGATION TABS ---
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📝 Register Profile",
     "👥 Player Directory",
     "🎾 Book a Court",
     "👨‍🏫 Coach Directory",
     "🤝 Matchmaking Board",
     "⚖️ Umpires & Staff",
+    "🔒 Privacy Policy",
 ])
 
 # --- TAB 1: REGISTRATION FORM ---
@@ -481,7 +482,7 @@ with tab6:
       " booking."
   )
 
-  if os.path.exists(STAFS_CSV := STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
+  if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
     try:
       s_df = pd.read_csv(STAFF_CSV)
       if s_df.empty:
@@ -496,3 +497,29 @@ with tab6:
       st.info("No support staff registered yet.")
   else:
     st.info("No support staff recorded yet. Register above!")
+
+# --- TAB 7: PRIVACY POLICY ---
+with tab7:
+  st.subheader("Privacy Policy & Terms of Service")
+  st.write(
+      "Effective Date: October 2026 | **Lagos Tennis Connect**"
+  )
+
+  st.markdown("""
+    ### 1. Information We Collect
+    Lagos Tennis Connect collects user-provided contact details (Full Name, Phone / WhatsApp Number) strictly for the purpose of community matchmaking, court bookings, coach directories, and support staff coordination within Lagos tennis clubs.
+
+    ### 2. How We Use Your Data
+    * To connect tennis players for matches and hitting sessions.
+    * To facilitate court reservations and verify coach fee compliance.
+    * Your phone number is visible in community directories solely to allow fellow players and verified members to contact you regarding tennis events.
+
+    ### 3. Data Security & Storage
+    All records are stored securely within the application's local database files. We do not sell, rent, or share your personal information with third-party advertisers.
+
+    ### 4. User Rights & Account Deletion
+    You retain full ownership of your data. If you wish to update or remove your registration details from the community directory, please contact the platform administrator.
+
+    ### 5. Contact Us
+    For privacy inquiries or support regarding Lagos Tennis Connect, reach out to our community management team via WhatsApp through your registered club coordinator.
+    """)
