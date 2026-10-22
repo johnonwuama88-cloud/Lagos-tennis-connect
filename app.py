@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 import os
+from urllib.parse import quote
 import pandas as pd
 from PIL import Image
 import streamlit as st
@@ -23,6 +24,13 @@ st.markdown(
     h3 {
         color: #D32F2F;
     }
+    .status-card {
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #FFFFFF;
+        border: 1px solid #E0E0E0;
+        margin-bottom: 10px;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -30,8 +38,8 @@ st.markdown(
 
 st.title("🎾 Lagos Tennis Connect")
 st.write(
-    "Welcome to Lagos' premier tennis community, court booking, coaching,"
-    " matchmaking, score predictions, and support staff hub!"
+    "Welcome to Lagos' ultimate tennis platform — court bookings, coaching,"
+    " matchmaking, ladder rankings, equipment marketplace, and tournaments!"
 )
 
 # Database files
@@ -39,7 +47,11 @@ PLAYERS_CSV = "registered_players.csv"
 BOOKINGS_CSV = "court_bookings.csv"
 COACHES_CSV = "registered_coaches.csv"
 MATCHES_CSV = "matchmaking_board.csv"
+RESULTS_CSV = "match_results.csv"
 STAFF_CSV = "support_staff.csv"
+GEAR_CSV = "equipment_marketplace.csv"
+TOURNAMENT_CSV = "tournament_entries.csv"
+COURT_STATUS_CSV = "court_conditions.csv"
 UPLOADS_DIR = "uploaded_photos"
 
 # Ensure upload directory exists
@@ -49,19 +61,19 @@ if not os.path.exists(UPLOADS_DIR):
 # Fee Regulation Cap (Maximum allowed hourly rate in Naira)
 MAX_HOURLY_RATE = 15000
 
-
 # --- NAVIGATION TABS ---
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📝 Register Profile",
     "👥 Player Directory",
-    "🎾 Book a Court",
+    "🎾 Book & Weather",
     "👨‍🏫 Coach Directory",
-    "⚔️ Match & Predictions",
-    "⚖️ Umpires & Staff",
+    "⚔️ Matches & Ladder",
+    "🛒 Gear & Stringing",
+    "🏆 Lagos Social Cup",
     "🔒 Privacy Policy",
 ])
 
-# --- TAB 1: ENHANCED REGISTRATION FORM ---
+# --- TAB 1: PLAYER REGISTRATION FORM ---
 with tab1:
   st.subheader("Player Profile Registration")
 
@@ -158,7 +170,7 @@ with tab1:
             f"Welcome, {full_name}! Your complete profile is now registered."
         )
 
-# --- TAB 2: ENHANCED PLAYER DIRECTORY ---
+# --- TAB 2: PLAYER DIRECTORY ---
 with tab2:
   st.subheader("Registered Player Community Directory")
 
@@ -248,17 +260,81 @@ with tab2:
   else:
     st.info("Directory is currently empty. Register your profile in Tab 1 first!")
 
-# --- TAB 3: COURT BOOKING SYSTEM ---
+# --- TAB 3: COURT BOOKING & WEATHER / COURT ALERTS ---
 with tab3:
-  st.subheader("Book a Tennis Court")
+  st.subheader("🎾 Court Bookings & Live Court Alerts")
+
+  # --- FEATURE 5: RAIN & COURT CONDITION ALERTS ---
+  st.markdown("### 🌦️ Real-Time Lagos Court Condition Alerts")
   st.write(
-      "Select a premier court in Lagos, pick your date, and lock in your match"
-      " slot."
+      "Check or report live court conditions across Lagos before heading out!"
   )
+
+  with st.expander("📢 Report Court Weather / Condition Update"):
+    with st.form("court_status_form"):
+      status_venue = st.selectbox(
+          "Venue:",
+          [
+              "Ikoyi Club 1938",
+              "Lagos Lawn Tennis Club (Onikan)",
+              "Lekki Peninsula Tennis Courts",
+              "National Stadium Courts (Surulere)",
+              "VGC Tennis Courts",
+          ],
+      )
+      condition_status = st.selectbox(
+          "Court Condition:",
+          [
+              "🟢 Playable - Dry & Sun Shining",
+              "🟡 Caution - Slightly Damp / Drying Up",
+              "🔴 Unplayable - Raining / Flooded Courts",
+          ],
+      )
+      status_notes = st.text_input(
+          "Quick Note (e.g., 'Court 3 wet, Courts 1 & 2 dry'):"
+      )
+      reporter_name = st.text_input("Your Name:")
+
+      status_submit = st.form_submit_button("Post Live Condition Update")
+
+      if status_submit:
+        st_exists = os.path.exists(COURT_STATUS_CSV)
+        st_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        with open(
+            COURT_STATUS_CSV, mode="a", newline="", encoding="utf-8"
+        ) as st_file:
+          st_writer = csv.writer(st_file)
+          if not st_exists:
+            st_writer.writerow(
+                ["Timestamp", "Venue", "Status", "Notes", "Reporter"]
+            )
+          st_writer.writerow([
+              st_time,
+              status_venue,
+              condition_status,
+              status_notes,
+              reporter_name,
+          ])
+        st.success("Condition report posted successfully!")
+
+  # Display latest court updates
+  if os.path.exists(COURT_STATUS_CSV) and os.path.getsize(COURT_STATUS_CSV) > 0:
+    try:
+      cs_df = pd.read_csv(COURT_STATUS_CSV)
+      if not cs_df.empty:
+        st.write("**Recent Community Updates:**")
+        st.dataframe(
+            cs_df.tail(3)[["Timestamp", "Venue", "Status", "Notes"]],
+            use_container_width=True,
+        )
+    except Exception:
+      pass
+
+  st.markdown("---")
+  st.subheader("📅 Book a Tennis Court Slot")
 
   with st.form("booking_form"):
     booker_name = st.text_input("Your Full Name (As registered):")
-
     court_choice = st.selectbox(
         "Choose Tennis Court Venue:",
         [
@@ -269,9 +345,7 @@ with tab3:
             "VGC Tennis Courts (Ajah)",
         ],
     )
-
     booking_date = st.date_input("Select Match Date:")
-
     time_slot = st.selectbox(
         "Select Time Slot:",
         [
@@ -308,36 +382,28 @@ with tab3:
           )
 
         st.success(
-            f"Booking Confirmed! 🎉 {court_choice} is locked in for"
-            f" {booker_name} on {booking_date} ({time_slot})."
+            f"Booking Confirmed! 🎉 {court_choice} locked for {booker_name} on"
+            f" {booking_date} ({time_slot})."
         )
-
-  st.markdown("---")
-  st.subheader("📅 Recent Court Bookings")
 
   if os.path.exists(BOOKINGS_CSV) and os.path.getsize(BOOKINGS_CSV) > 0:
     try:
       b_df = pd.read_csv(BOOKINGS_CSV)
-      if b_df.empty:
-        st.info("No bookings made yet.")
-      else:
+      if not b_df.empty:
+        st.markdown("### 📋 Scheduled Court Bookings")
         st.dataframe(
             b_df[["Player Name", "Court Venue", "Date", "Time Slot"]],
             use_container_width=True,
         )
-    except pd.errors.EmptyDataError:
-      st.info("No bookings made yet.")
-  else:
-    st.info("No bookings recorded yet.")
+    except Exception:
+      pass
 
 # --- TAB 4: COACH DIRECTORY ---
 with tab4:
   st.subheader("Verified Lagos Coaches & Fee Regulation")
   st.warning(
-      "🛡️ **Community Pricing Policy:** To protect players from exploitation,"
-      f" Lagos Tennis Connect enforces a strict maximum coaching rate cap of"
-      f" **₦{MAX_HOURLY_RATE:,} per hour**. Coaches charging above this limit"
-      " will not be listed."
+      "🛡️ **Community Pricing Policy:** Maximum allowed coaching rate is"
+      f" **₦{MAX_HOURLY_RATE:,} per hour**."
   )
 
   with st.expander("➕ Register as a Community Coach"):
@@ -370,8 +436,7 @@ with tab4:
         elif hourly_rate > MAX_HOURLY_RATE:
           st.error(
               f"❌ Application Rejected: Your rate of ₦{hourly_rate:,} exceeds"
-              f" the maximum community cap of ₦{MAX_HOURLY_RATE:,}/hr. Please"
-              " lower your rate to comply."
+              f" the limit of ₦{MAX_HOURLY_RATE:,}/hr."
           )
         else:
           c_exists = os.path.exists(COACHES_CSV)
@@ -391,42 +456,27 @@ with tab4:
                 [c_timestamp, coach_name, coach_area, hourly_rate, coach_phone]
             )
 
-          st.success(
-              f"🎉 Congratulations Coach {coach_name}! Your rates comply with"
-              " our fee regulation policy."
-          )
-
-  st.markdown("---")
-  st.subheader("📋 Regulated Coach Directory")
+          st.success(f"🎉 Coach {coach_name} registered successfully!")
 
   if os.path.exists(COACHES_CSV) and os.path.getsize(COACHES_CSV) > 0:
     try:
       c_df = pd.read_csv(COACHES_CSV)
-      if c_df.empty:
-        st.info("No coaches registered yet.")
-      else:
-        st.metric(label="Verified Regulated Coaches", value=len(c_df))
+      if not c_df.empty:
+        st.subheader("📋 Regulated Coach Directory")
         st.dataframe(
             c_df[["Coach Name", "Location", "Hourly Rate (₦)", "Phone"]],
             use_container_width=True,
         )
-    except pd.errors.EmptyDataError:
-      st.info("No coaches registered yet.")
-  else:
-    st.info("No verified coaches recorded yet.")
+    except Exception:
+      pass
 
-# --- TAB 5: MATCHMAKING, MATCH FORMATS & SCORE PREDICTIONS ---
+# --- TAB 5: MATCHMAKING, PREDICTIONS, WHATSAPP SHARE & LADDER ---
 with tab5:
-  st.subheader("⚔️ Matchmaking, Challenge & Prediction Center")
-  st.write(
-      "Set up your match, choose your game format, assign an Umpire/Ball Boy,"
-      " and predict your winning score!"
-  )
+  st.subheader("⚔️ Matches, Score Predictions & Lagos Tennis Ladder")
 
-  # Fetch registered Umpires & Staff for assignment
+  # Fetch registered Umpires & Staff
   umpire_options = ["None / Self-Officiated"]
   crew_options = ["None"]
-
   if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
     try:
       s_data = pd.read_csv(STAFF_CSV)
@@ -436,7 +486,6 @@ with tab5:
       crews = s_data[s_data["Role"] == "Ball Boy / Girl Crew"][
           "Staff Name"
       ].tolist()
-
       if umpires:
         umpire_options.extend(umpires)
       if crews:
@@ -444,13 +493,12 @@ with tab5:
     except Exception:
       pass
 
-  with st.expander("🔥 Post a Match Challenge & Predict Score", expanded=True):
+  with st.expander("🔥 Post a Challenge & Predict Score", expanded=True):
     with st.form("match_challenge_form"):
       c1, c2 = st.columns(2)
-
       with c1:
         player_1 = st.text_input("Player 1 (Challenger):")
-        player_2 = st.text_input("Player 2 (Opponent, e.g., Duke):")
+        player_2 = st.text_input("Player 2 (Opponent):")
         court_venue = st.selectbox(
             "Agreed Court Venue:",
             [
@@ -468,23 +516,20 @@ with tab5:
             "Select Match Format:",
             [
                 "1 Set (First to 6 Games, Tie-Break at 6-6)",
-                "Best of 3 Sets (Full Match, Games of 6)",
-                "Fast4 Format (First to 4 Games, Short Sets)",
+                "Best of 3 Sets (Full Match)",
+                "Fast4 Format (First to 4 Games)",
                 "Game of 4 (Pro Set)",
                 "10-Point Super Tie-Break Match",
             ],
         )
-
         assigned_umpire = st.selectbox("Assigned Umpire:", umpire_options)
         assigned_ballboy = st.selectbox("Assigned Ball Boy/Crew:", crew_options)
-
         predicted_score = st.text_input(
-            "Predicted Score (e.g., '6-0 (6 Luv)', '6-4 6-2', '4-1 4-2'):",
-            placeholder="6-0 (6 Luv)",
+            "Predicted Score:", placeholder="6-0 (6 Luv)"
         )
 
       challenger_phone = st.text_input("Challenger WhatsApp / Phone Number:")
-      challenge_submit = st.form_submit_button("Submit Match & Prediction")
+      challenge_submit = st.form_submit_button("Submit Challenge & Prediction")
 
       if challenge_submit:
         if player_1 == "" or player_2 == "":
@@ -522,151 +567,12 @@ with tab5:
             ])
 
           st.success(
-              f"🔥 Challenge Locked In! {player_1} vs {player_2} at"
-              f" {court_venue}. Predicted Score: {predicted_score}!"
+              f"🔥 Challenge Posted! {player_1} vs {player_2} at {court_venue}."
           )
 
-  st.markdown("---")
-  st.subheader("📊 Upcoming Fixtures & Predictions Board")
-
+  # Display Fixtures + FEATURE 2: WHATSAPP SHARE BUTTON
   if os.path.exists(MATCHES_CSV) and os.path.getsize(MATCHES_CSV) > 0:
     try:
       m_df = pd.read_csv(MATCHES_CSV)
-      if m_df.empty:
-        st.info("No match predictions posted yet. Challenge a player above!")
-      else:
-        st.metric(label="Scheduled Match Challenges", value=len(m_df))
-
-        # Render Match Cards nicely
-        for idx, row in m_df.iterrows():
-          with st.container():
-            st.markdown(
-                f"### 🎾 **{row.get('Player 1', 'Player 1')}** vs"
-                f" **{row.get('Player 2', 'Opponent')}**"
-            )
-            fc1, fc2, fc3 = st.columns(3)
-            with fc1:
-              st.write(f"**📍 Venue:** {row.get('Venue', 'N/A')}")
-              st.write(f"**📅 Date:** {row.get('Date', 'N/A')}")
-            with fc2:
-              st.write(f"**⚙️ Format:** `{row.get('Match Format', 'N/A')}`")
-              st.write(
-                  f"**🎯 Predicted Score:** `{row.get('Predicted Score', 'N/A')}`"
-              )
-            with fc3:
-              st.write(f"**⚖️ Umpire:** {row.get('Assigned Umpire', 'None')}")
-              st.write(
-                  f"**🎾 Ball Crew:** {row.get('Assigned Ball Boy', 'None')}"
-              )
-            st.markdown("---")
-    except Exception as e:
-      st.error(f"Error loading fixture board: {e}")
-  else:
-    st.info("No match challenges recorded yet. Post yours above!")
-
-# --- TAB 6: UMPIRES & SUPPORT STAFF ---
-with tab6:
-  st.subheader("Umpires & Ball Boys Registry")
-  st.write(
-      "Register as professional match support staff or find certified umpires"
-      " and ball crews for your tournaments."
-  )
-
-  with st.expander("➕ Register as Support Staff"):
-    with st.form("staff_form"):
-      staff_name = st.text_input("Full Name:")
-      staff_phone = st.text_input("WhatsApp / Phone Number:")
-
-      staff_role = st.selectbox(
-          "Support Role:",
-          ["Certified Umpire", "Line Judge", "Ball Boy / Girl Crew"],
-      )
-
-      staff_area = st.selectbox(
-          "Preferred Venue / Area:",
-          [
-              "Ikoyi Club",
-              "Lagos Lawn Tennis Club",
-              "Lekki Phase 1 Courts",
-              "VGC Courts",
-              "National Stadium Surulere",
-          ],
-      )
-
-      daily_rate = st.number_input(
-          "Expected Daily Fee (₦):",
-          min_value=1000,
-          max_value=30000,
-          value=5000,
-          step=500,
-      )
-
-      staff_submit = st.form_submit_button("Submit Staff Registration")
-
-      if staff_submit:
-        if staff_name == "" or staff_phone == "":
-          st.error("Please enter your name and phone number.")
-        else:
-          s_exists = os.path.exists(STAFF_CSV)
-          s_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-          with open(STAFF_CSV, mode="a", newline="", encoding="utf-8") as s_file:
-            s_writer = csv.writer(s_file)
-            if not s_exists:
-              s_writer.writerow([
-                  "Timestamp",
-                  "Staff Name",
-                  "Role",
-                  "Location",
-                  "Daily Fee (₦)",
-                  "Phone",
-              ])
-            s_writer.writerow([
-                s_timestamp,
-                staff_name,
-                staff_role,
-                staff_area,
-                daily_rate,
-                staff_phone,
-            ])
-
-          st.success(
-              f"Success! You are now registered as a {staff_role} in Lagos"
-              " Tennis Connect. 🎉"
-          )
-
-  st.markdown("---")
-  st.subheader("📋 Available Support Staff Directory")
-
-  if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
-    try:
-      s_df = pd.read_csv(STAFF_CSV)
-      if s_df.empty:
-        st.info("No support staff registered yet.")
-      else:
-        st.metric(label="Registered Support Staff", value=len(s_df))
-        st.dataframe(
-            s_df[["Staff Name", "Role", "Location", "Daily Fee (₦)", "Phone"]],
-            use_container_width=True,
-        )
-    except pd.errors.EmptyDataError:
-      st.info("No support staff registered yet.")
-  else:
-    st.info("No support staff recorded yet. Register above!")
-
-# --- TAB 7: PRIVACY POLICY ---
-with tab7:
-  st.subheader("Privacy Policy & Terms of Service")
-  st.write("Effective Date: October 2026 | **Lagos Tennis Connect**")
-
-  st.markdown("""
-    ### 1. Information We Collect
-    Lagos Tennis Connect collects user-provided contact details strictly for community matchmaking and tennis events in Lagos.
-
-    ### 2. How We Use Your Data
-    * To connect tennis players for matches and hitting sessions.
-    * To facilitate court reservations, coach directories, match score predictions, and support staff bookings.
-
-    ### 3. Data Security & Privacy
-    All uploaded image assets and profile details are stored securely. We do not share or sell data to third-party advertisers.
-    """)
+      if not m_df.empty:
+        st.markdown
