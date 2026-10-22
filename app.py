@@ -391,3 +391,338 @@ with tab3:
         st.markdown("### 📋 Scheduled Court Bookings")
         st.dataframe(
             b_df[["Player Name", "Court Venue", "Date", "Time Slot"]],
+            use_container_width=True,
+        )
+    except Exception:
+      pass
+
+# --- TAB 4: COACH DIRECTORY ---
+with tab4:
+  st.subheader("Verified Lagos Coaches & Fee Regulation")
+  st.warning(
+      "🛡️ **Community Pricing Policy:** Maximum allowed coaching rate is"
+      f" **₦{MAX_HOURLY_RATE:,} per hour**."
+  )
+
+  with st.expander("➕ Register as a Community Coach"):
+    with st.form("coach_form"):
+      coach_name = st.text_input("Coach Full Name:")
+      coach_phone = st.text_input("Phone / WhatsApp Number:")
+      coach_area = st.selectbox(
+          "Primary Training Location / Club:",
+          [
+              "Ikoyi Club",
+              "Lagos Lawn Tennis Club",
+              "Lekki / Ajah Estates",
+              "Ikeja GRA",
+              "Surulere",
+          ],
+      )
+      hourly_rate = st.number_input(
+          "Proposed Hourly Rate (₦):",
+          min_value=1000,
+          max_value=50000,
+          value=10000,
+          step=500,
+      )
+
+      coach_submit = st.form_submit_button("Submit Coach Application")
+
+      if coach_submit:
+        if coach_name == "" or coach_phone == "":
+          st.error("Please fill in all required fields.")
+        elif hourly_rate > MAX_HOURLY_RATE:
+          st.error(
+              f"❌ Application Rejected: Your rate of ₦{hourly_rate:,} exceeds"
+              f" the limit of ₦{MAX_HOURLY_RATE:,}/hr."
+          )
+        else:
+          c_exists = os.path.exists(COACHES_CSV)
+          c_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+          with open(COACHES_CSV, mode="a", newline="", encoding="utf-8") as c_file:
+            c_writer = csv.writer(c_file)
+            if not c_exists:
+              c_writer.writerow([
+                  "Timestamp",
+                  "Coach Name",
+                  "Location",
+                  "Hourly Rate (₦)",
+                  "Phone",
+              ])
+            c_writer.writerow(
+                [c_timestamp, coach_name, coach_area, hourly_rate, coach_phone]
+            )
+
+          st.success(f"🎉 Coach {coach_name} registered successfully!")
+
+  if os.path.exists(COACHES_CSV) and os.path.getsize(COACHES_CSV) > 0:
+    try:
+      c_df = pd.read_csv(COACHES_CSV)
+      if not c_df.empty:
+        st.subheader("📋 Regulated Coach Directory")
+        st.dataframe(
+            c_df[["Coach Name", "Location", "Hourly Rate (₦)", "Phone"]],
+            use_container_width=True,
+        )
+    except Exception:
+      pass
+
+# --- TAB 5: MATCHMAKING, PREDICTIONS, WHATSAPP SHARE & LADDER ---
+with tab5:
+  st.subheader("⚔️ Matches, Score Predictions & Lagos Tennis Ladder")
+
+  umpire_options = ["None / Self-Officiated"]
+  crew_options = ["None"]
+  if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
+    try:
+      s_data = pd.read_csv(STAFF_CSV)
+      umpires = s_data[s_data["Role"] == "Certified Umpire"][
+          "Staff Name"
+      ].tolist()
+      crews = s_data[s_data["Role"] == "Ball Boy / Girl Crew"][
+          "Staff Name"
+      ].tolist()
+      if umpires:
+        umpire_options.extend(umpires)
+      if crews:
+        crew_options.extend(crews)
+    except Exception:
+      pass
+
+  with st.expander("🔥 Post a Challenge & Predict Score", expanded=True):
+    with st.form("match_challenge_form"):
+      c1, c2 = st.columns(2)
+      with c1:
+        player_1 = st.text_input("Player 1 (Challenger):")
+        player_2 = st.text_input("Player 2 (Opponent):")
+        court_venue = st.selectbox(
+            "Agreed Court Venue:",
+            [
+                "Ikoyi Club 1938",
+                "Lagos Lawn Tennis Club",
+                "Lekki Peninsula Tennis Courts",
+                "National Stadium Surulere",
+                "VGC Tennis Courts",
+            ],
+        )
+        match_date = st.date_input("Match Date:")
+
+      with c2:
+        game_format = st.selectbox(
+            "Select Match Format:",
+            [
+                "1 Set (First to 6 Games, Tie-Break at 6-6)",
+                "Best of 3 Sets (Full Match)",
+                "Fast4 Format (First to 4 Games)",
+                "Game of 4 (Pro Set)",
+                "10-Point Super Tie-Break Match",
+            ],
+        )
+        assigned_umpire = st.selectbox("Assigned Umpire:", umpire_options)
+        assigned_ballboy = st.selectbox("Assigned Ball Boy/Crew:", crew_options)
+        predicted_score = st.text_input(
+            "Predicted Score:", placeholder="6-0 (6 Luv)"
+        )
+
+      challenger_phone = st.text_input("Challenger WhatsApp / Phone Number:")
+      challenge_submit = st.form_submit_button("Submit Challenge & Prediction")
+
+      if challenge_submit:
+        if player_1 == "" or player_2 == "":
+          st.error("Please enter both player names.")
+        else:
+          m_exists = os.path.exists(MATCHES_CSV)
+          m_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+          with open(MATCHES_CSV, mode="a", newline="", encoding="utf-8") as m_file:
+            m_writer = csv.writer(m_file)
+            if not m_exists:
+              m_writer.writerow([
+                  "Timestamp",
+                  "Player 1",
+                  "Player 2",
+                  "Venue",
+                  "Date",
+                  "Match Format",
+                  "Assigned Umpire",
+                  "Assigned Ball Boy",
+                  "Predicted Score",
+                  "Phone",
+              ])
+            m_writer.writerow([
+                m_timestamp,
+                player_1,
+                player_2,
+                court_venue,
+                str(match_date),
+                game_format,
+                assigned_umpire,
+                assigned_ballboy,
+                predicted_score,
+                challenger_phone,
+            ])
+
+          st.success(
+              f"🔥 Challenge Posted! {player_1} vs {player_2} at {court_venue}."
+          )
+
+  if os.path.exists(MATCHES_CSV) and os.path.getsize(MATCHES_CSV) > 0:
+    try:
+      m_df = pd.read_csv(MATCHES_CSV)
+      if not m_df.empty:
+        st.markdown("### 📊 Scheduled Fixtures & WhatsApp Share")
+        for idx, row in m_df.iterrows():
+          p1 = row.get("Player 1", "P1")
+          p2 = row.get("Player 2", "P2")
+          m_date = row.get("Date", "")
+          m_venue = row.get("Venue", "")
+          pred = row.get("Predicted Score", "")
+
+          st.write(
+              f"🎾 **{p1} vs {p2}** | 📅 {m_date} at {m_venue} | 🎯 Pred: `{pred}`"
+          )
+
+          share_text = (
+              f"🎾 *Lagos Tennis Challenge!* {p1} vs {p2} on {m_date} at"
+              f" {m_venue}. Predicted Score: {pred}. Join us on Lagos Tennis"
+              " Connect!"
+          )
+          wa_url = f"https://api.whatsapp.com/send?text={quote(share_text)}"
+          st.markdown(f"[📲 **Share Challenge to WhatsApp**]({wa_url})")
+          st.markdown("---")
+    except Exception:
+      pass
+
+  st.markdown("---")
+  st.subheader("🏆 Submit Final Match Result & Live Ladder")
+
+  with st.expander("📝 Record Final Score (Earn Points for Ladder)"):
+    with st.form("result_form"):
+      res_p1 = st.text_input("Winner Name:")
+      res_p2 = st.text_input("Runner-Up Name:")
+      final_score = st.text_input("Actual Final Score (e.g., 6-2, 6-4):")
+      res_venue = st.selectbox(
+          "Venue Played:",
+          [
+              "Ikoyi Club 1938",
+              "Lagos Lawn Tennis Club",
+              "Lekki Phase 1 Courts",
+              "National Stadium",
+              "VGC Courts",
+          ],
+      )
+
+      res_submit = st.form_submit_button("Record Match Result")
+
+      if res_submit:
+        if res_p1 == "" or res_p2 == "":
+          st.error("Please provide both player names.")
+        else:
+          r_exists = os.path.exists(RESULTS_CSV)
+          r_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+          with open(
+              RESULTS_CSV, mode="a", newline="", encoding="utf-8"
+          ) as r_file:
+            r_writer = csv.writer(r_file)
+            if not r_exists:
+              r_writer.writerow(
+                  ["Timestamp", "Winner", "RunnerUp", "Score", "Venue"]
+              )
+            r_writer.writerow([r_time, res_p1, res_p2, final_score, res_venue])
+          st.success(
+              f"Result recorded! {res_p1} awarded 3 Ladder Points, {res_p2}"
+              " awarded 1 Point!"
+          )
+
+  if os.path.exists(RESULTS_CSV) and os.path.getsize(RESULTS_CSV) > 0:
+    try:
+      r_df = pd.read_csv(RESULTS_CSV)
+      if not r_df.empty:
+        st.markdown("### 🥇 Official Lagos Tennis Ladder Rankings")
+
+        scores_dict = {}
+        for _, row in r_df.iterrows():
+          winner = str(row["Winner"]).strip()
+          runner = str(row["RunnerUp"]).strip()
+
+          scores_dict[winner] = scores_dict.get(winner, 0) + 3
+          scores_dict[runner] = scores_dict.get(runner, 0) + 1
+
+        ladder_df = pd.DataFrame(
+            list(scores_dict.items()), columns=["Player Name", "Total Points"]
+        )
+        ladder_df = ladder_df.sort_values(
+            by="Total Points", ascending=False
+        ).reset_index(drop=True)
+        ladder_df.index += 1
+
+        st.dataframe(ladder_df, use_container_width=True)
+    except Exception:
+      pass
+
+# --- TAB 6: EQUIPMENT MARKETPLACE & STRINGING SERVICES ---
+with tab6:
+  st.subheader("🛒 Equipment, Gear & Stringing Marketplace")
+  st.write(
+      "Buy/sell tennis gear or locate certified racket stringers in Lagos!"
+  )
+
+  with st.expander("➕ List Item or Stringing Service"):
+    with st.form("gear_form"):
+      listing_type = st.selectbox(
+          "Listing Type:",
+          [
+              "Racket Stringing Service",
+              "Used / New Racket for Sale",
+              "Tennis Balls & Accessories",
+              "Apparel & Shoes",
+          ],
+      )
+      seller_name = st.text_input("Name / Business Name:")
+      item_title = st.text_input("Item / Service Title:")
+      price_naira = st.number_input(
+          "Price / Service Fee (₦):", min_value=500, value=15000, step=500
+      )
+      contact_phone = st.text_input("WhatsApp / Phone Number:")
+      item_location = st.selectbox(
+          "Location in Lagos:",
+          [
+              "Ikoyi / VI",
+              "Lekki / Ajah",
+              "Ikeja / Mainland",
+              "Surulere",
+          ],
+      )
+
+      gear_submit = st.form_submit_button("Post Listing")
+
+      if gear_submit:
+        g_exists = os.path.exists(GEAR_CSV)
+        g_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        with open(GEAR_CSV, mode="a", newline="", encoding="utf-8") as g_file:
+          g_writer = csv.writer(g_file)
+          if not g_exists:
+            g_writer.writerow([
+                "Timestamp",
+                "Type",
+                "Title",
+                "Price",
+                "Seller",
+                "Location",
+                "Phone",
+            ])
+          g_writer.writerow([
+              g_time,
+              listing_type,
+              item_title,
+              price_naira,
+              seller_name,
+              item_location,
+              contact_phone,
+          ])
+        st.success("Listing posted to marketplace!")
+
+  if os.path.exists(GEAR_CSV) and os.path.getsize(GEAR_CSV) > 0:
+    try:
+      g_df = pd
