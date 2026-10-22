@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 import os
 import pandas as pd
+from PIL import Image
 import streamlit as st
 
 # --- CUSTOM CSS STYLING ---
@@ -39,6 +40,11 @@ BOOKINGS_CSV = "court_bookings.csv"
 COACHES_CSV = "registered_coaches.csv"
 MATCHES_CSV = "matchmaking_board.csv"
 STAFF_CSV = "support_staff.csv"
+UPLOADS_DIR = "uploaded_photos"
+
+# Ensure upload directory exists
+if not os.path.exists(UPLOADS_DIR):
+  os.makedirs(UPLOADS_DIR)
 
 # Fee Regulation Cap (Maximum allowed hourly rate in Naira)
 MAX_HOURLY_RATE = 15000
@@ -55,27 +61,51 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🔒 Privacy Policy",
 ])
 
-# --- TAB 1: REGISTRATION FORM ---
+# --- TAB 1: ENHANCED REGISTRATION FORM ---
 with tab1:
-  st.subheader("Player Registration Form")
+  st.subheader("Player Profile Registration")
 
   with st.form("registration_form"):
-    full_name = st.text_input("Enter your Full Name:")
-    phone_number = st.text_input("Enter your Phone / WhatsApp Number:")
+    col1, col2 = st.columns(2)
 
-    lagos_area = st.selectbox(
-        "Where are you based in Lagos?",
-        [
-            "Lekki / Ajah",
-            "Victoria Island / Ikoyi",
-            "Ikeja / Mainland",
-            "Surulere",
-        ],
+    with col1:
+      full_name = st.text_input("Full Name:")
+      phone_number = st.text_input("Phone / WhatsApp Number:")
+      dob = st.date_input(
+          "Date of Birth:",
+          min_value=datetime(1940, 1, 1),
+          max_value=datetime.now(),
+      )
+      state_of_origin = st.text_input(
+          "State of Origin (e.g., Anambra, Lagos, Delta):"
+      )
+
+    with col2:
+      lagos_area = st.selectbox(
+          "Base Location in Lagos:",
+          [
+              "Lekki / Ajah",
+              "Victoria Island / Ikoyi",
+              "Ikeja / Mainland",
+              "Surulere",
+          ],
+      )
+      skill_level = st.selectbox(
+          "Tennis Skill Level:", ["Beginner", "Intermediate", "Advanced"]
+      )
+      profession = st.text_input(
+          "Profession / Occupation (e.g., Software Engineer, Banker):"
+      )
+
+    bio = st.text_area(
+        "Short Bio / About Yourself:",
+        placeholder=(
+            "Tell the community about your tennis goals, playing style, or"
+            " hobbies..."
+        ),
     )
-
-    skill_level = st.selectbox(
-        "Your Tennis Skill Level:",
-        ["Beginner", "Intermediate", "Advanced"],
+    profile_photo = st.file_uploader(
+        "Upload Profile Picture (JPG/PNG):", type=["png", "jpg", "jpeg"]
     )
 
     submit_button = st.form_submit_button("Complete Registration")
@@ -84,28 +114,54 @@ with tab1:
       if full_name == "" or phone_number == "":
         st.error("Please provide your name and phone number.")
       else:
+        # Save uploaded profile picture if provided
+        photo_filename = "default.png"
+        if profile_photo is not None:
+          photo_filename = (
+              f"{full_name.replace(' ', '_').lower()}_{profile_photo.name}"
+          )
+          photo_path = os.path.join(UPLOADS_DIR, photo_filename)
+          with open(photo_path, "wb") as f:
+            f.write(profile_photo.getbuffer())
+
         file_exists = os.path.exists(PLAYERS_CSV)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         with open(PLAYERS_CSV, mode="a", newline="", encoding="utf-8") as file:
           writer = csv.writer(file)
           if not file_exists:
-            writer.writerow(
-                ["Timestamp", "Full Name", "Phone", "Lagos Area", "Skill"]
-            )
-          writer.writerow(
-              [timestamp, full_name, phone_number, lagos_area, skill_level]
-          )
+            writer.writerow([
+                "Timestamp",
+                "Full Name",
+                "Phone",
+                "Lagos Area",
+                "Skill",
+                "DOB",
+                "State of Origin",
+                "Profession",
+                "Bio",
+                "Photo Filename",
+            ])
+          writer.writerow([
+              timestamp,
+              full_name,
+              phone_number,
+              lagos_area,
+              skill_level,
+              str(dob),
+              state_of_origin,
+              profession,
+              bio,
+              photo_filename,
+          ])
 
         st.success(
-            f"Welcome, {full_name}! You are successfully registered in the"
-            " database."
+            f"Welcome, {full_name}! Your complete profile is now registered."
         )
 
-# --- TAB 2: PLAYER DIRECTORY ---
+# --- TAB 2: ENHANCED PLAYER DIRECTORY WITH DROPDOWN PROFILE CARDS ---
 with tab2:
-  st.subheader("Registered Tennis Community Directory")
-  st.write("Browse fellow tennis players in Lagos and connect!")
+  st.subheader("Registered Player Community Directory")
 
   if os.path.exists(PLAYERS_CSV) and os.path.getsize(PLAYERS_CSV) > 0:
     try:
@@ -113,11 +169,86 @@ with tab2:
       if df.empty:
         st.info("No players registered yet. Be the first to sign up in Tab 1!")
       else:
-        st.metric(label="Total Active Players in Lagos", value=len(df))
-        display_df = df[["Full Name", "Lagos Area", "Skill", "Phone"]]
-        st.dataframe(display_df, use_container_width=True)
-    except pd.errors.EmptyDataError:
-      st.info("No players registered yet. Be the first to sign up in Tab 1!")
+        st.metric(label="Total Registered Players in Lagos", value=len(df))
+
+        # --- PROFILE CARDS SECTION VIA DROPDOWN ---
+        st.markdown("### 🔍 View Player Detailed Profile")
+        player_names = df["Full Name"].dropna().tolist()
+
+        selected_player = st.selectbox(
+            "Select a player to view full profile details:", player_names
+        )
+
+        if selected_player:
+          player_data = df[df["Full Name"] == selected_player].iloc[0]
+
+          # Profile Display Card
+          with st.container():
+            st.markdown("---")
+            p_col1, p_col2 = st.columns([1, 2])
+
+            with p_col1:
+              photo_file = str(player_data.get("Photo Filename", "default.png"))
+              photo_path = os.path.join(UPLOADS_DIR, photo_file)
+
+              if os.path.exists(photo_path) and photo_file != "default.png":
+                img = Image.open(photo_path)
+                st.image(
+                    img, caption=player_data["Full Name"], use_column_width=True
+                )
+              else:
+                st.info("📷 No photo uploaded.")
+
+            with p_col2:
+              st.markdown(f"## {player_data['Full Name']}")
+              st.markdown(
+                  f"**🎾 Skill Level:** `{player_data.get('Skill', 'N/A')}`"
+              )
+              st.markdown(
+                  f"**📍 Location:**"
+                  f" `{player_data.get('Lagos Area', 'N/A')}`"
+              )
+              st.markdown(
+                  f"**💼 Profession:**"
+                  f" `{player_data.get('Profession', 'N/A')}`"
+              )
+              st.markdown(
+                  f"**🏛️ State of Origin:**"
+                  f" `{player_data.get('State of Origin', 'N/A')}`"
+              )
+              st.markdown(
+                  f"**🎂 Date of Birth:** `{player_data.get('DOB', 'N/A')}`"
+              )
+              st.markdown(
+                  f"**📞 Phone / WhatsApp:** `{player_data.get('Phone', 'N/A')}`"
+              )
+
+            st.markdown("### 📝 Player Bio")
+            bio_text = player_data.get("Bio", "")
+            if pd.isna(bio_text) or str(bio_text).strip() == "":
+              st.write("*No bio provided yet.*")
+            else:
+              st.info(f'"{bio_text}"')
+
+        st.markdown("---")
+        st.markdown("### 📋 Full Community List")
+        # Display summarized table view below
+        cols_to_show = [
+            col
+            for col in [
+                "Full Name",
+                "Lagos Area",
+                "Skill",
+                "Profession",
+                "State of Origin",
+                "Phone",
+            ]
+            if col in df.columns
+        ]
+        st.dataframe(df[cols_to_show], use_container_width=True)
+
+    except Exception as e:
+      st.error(f"Error reading directory: {e}")
   else:
     st.info("Directory is currently empty. Register your profile in Tab 1 first!")
 
@@ -293,7 +424,7 @@ with tab4:
   else:
     st.info("No verified coaches recorded yet.")
 
-# --- TAB 5: MATCHMAKING & HITTING PARTNER BOARD ---
+# --- TAB 5: MATCHMAKING BOARD ---
 with tab5:
   st.subheader("Matchmaking & Hitting Partner Board")
   st.write(
@@ -370,10 +501,6 @@ with tab5:
 
   st.markdown("---")
   st.subheader("🔥 Live Open Matches & Hitting Requests")
-  st.write(
-      "Browse open challenges below and reach out via phone/WhatsApp to accept"
-      " a match!"
-  )
 
   if os.path.exists(MATCHES_CSV) and os.path.getsize(MATCHES_CSV) > 0:
     try:
@@ -400,7 +527,7 @@ with tab5:
   else:
     st.info("No match requests recorded yet. Post yours above!")
 
-# --- TAB 6: UMPIRES & SUPPORT STAFF REGISTRY ---
+# --- TAB 6: UMPIRES & SUPPORT STAFF ---
 with tab6:
   st.subheader("Umpires & Ball Boys Registry")
   st.write(
@@ -415,11 +542,7 @@ with tab6:
 
       staff_role = st.selectbox(
           "Support Role:",
-          [
-              "Certified Umpire",
-              "Line Judge",
-              "Ball Boy / Girl Crew",
-          ],
+          ["Certified Umpire", "Line Judge", "Ball Boy / Girl Crew"],
       )
 
       staff_area = st.selectbox(
@@ -477,10 +600,6 @@ with tab6:
 
   st.markdown("---")
   st.subheader("📋 Available Support Staff Directory")
-  st.write(
-      "Browse verified umpires, line judges, and ball crews available for"
-      " booking."
-  )
 
   if os.path.exists(STAFF_CSV) and os.path.getsize(STAFF_CSV) > 0:
     try:
@@ -501,25 +620,16 @@ with tab6:
 # --- TAB 7: PRIVACY POLICY ---
 with tab7:
   st.subheader("Privacy Policy & Terms of Service")
-  st.write(
-      "Effective Date: October 2026 | **Lagos Tennis Connect**"
-  )
+  st.write("Effective Date: October 2026 | **Lagos Tennis Connect**")
 
   st.markdown("""
     ### 1. Information We Collect
-    Lagos Tennis Connect collects user-provided contact details (Full Name, Phone / WhatsApp Number) strictly for the purpose of community matchmaking, court bookings, coach directories, and support staff coordination within Lagos tennis clubs.
+    Lagos Tennis Connect collects user-provided contact details (Full Name, Phone / WhatsApp Number, DOB, Profession, State of Origin, Profile Picture, and Bio) strictly for community matchmaking and tennis events in Lagos.
 
     ### 2. How We Use Your Data
     * To connect tennis players for matches and hitting sessions.
-    * To facilitate court reservations and verify coach fee compliance.
-    * Your phone number is visible in community directories solely to allow fellow players and verified members to contact you regarding tennis events.
+    * To facilitate court reservations, coach directories, and support staff bookings.
 
-    ### 3. Data Security & Storage
-    All records are stored securely within the application's local database files. We do not sell, rent, or share your personal information with third-party advertisers.
-
-    ### 4. User Rights & Account Deletion
-    You retain full ownership of your data. If you wish to update or remove your registration details from the community directory, please contact the platform administrator.
-
-    ### 5. Contact Us
-    For privacy inquiries or support regarding Lagos Tennis Connect, reach out to our community management team via WhatsApp through your registered club coordinator.
+    ### 3. Data Security & Privacy
+    All uploaded image assets and profile details are stored securely. We do not share or sell data to third-party advertisers.
     """)
