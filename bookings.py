@@ -12,30 +12,46 @@ def render_booking_system():
     st.subheader("📅 Court Reservation & Security Gate Pass")
     st.caption("Browse top courts in Lagos, schedule court slots, pay ball boy fees, and issue estate passes.")
 
-    # 1. Visual Court Showcase Showcase Section
-    st.markdown("### 🏟️ Featured Lagos Tennis Clubs")
+    # 1. Authentic Lagos & African Tennis Player Showcase
+    st.markdown("### 🏟️ Featured Lagos Tennis Clubs & Active Players")
     
     col_v1, col_v2, col_v3, col_v4 = st.columns(4)
     
     with col_v1:
-        st.image("https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=500&q=80", caption="Ikoyi Club 1938 (Ikoyi)", use_container_width=True)
-        st.caption("🎾 9 Clay & Hard Courts")
+        st.image(
+            "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=600&q=80",
+            caption="Ikoyi Club 1938 (Center Court)",
+            use_container_width=True
+        )
+        st.caption("🎾 **Ikoyi Club 1938** | 9 Hard Courts")
         
     with col_v2:
-        st.image("https://images.unsplash.com/photo-1530915534664-4ac6423ca938?auto=format&fit=crop&w=500&q=80", caption="Lagos Lawn Tennis Club (Onikan)", use_container_width=True)
-        st.caption("🎾 Historic Center Court")
+        st.image(
+            "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=600&q=80",
+            caption="Lagos Lawn Tennis Club (Onikan)",
+            use_container_width=True
+        )
+        st.caption("🎾 **LLTC Onikan** | Historic Clay/Hard")
         
     with col_v3:
-        st.image("https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=500&q=80", caption="VGC Recreation Club (VGC)", use_container_width=True)
-        st.caption("🎾 Floodlit Night Play")
+        st.image(
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+            caption="Lekki Phase 1 / Nicon Town Match",
+            use_container_width=True
+        )
+        st.caption("🎾 **Nicon Town Courts** | Private Member Session")
         
     with col_v4:
-        st.image("https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=500&q=80", caption="Nicon Town Courts (Lekki)", use_container_width=True)
-        st.caption("🎾 Exclusive Gated Facility")
+        st.image(
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+            caption="VGC Recreation Club",
+            use_container_width=True
+        )
+        st.caption("🎾 **VGC Recreation Club** | Floodlit Evening Play")
 
     st.divider()
 
-    # 2. Reservation Selection Form
+    # 2. Reservation Form
     st.markdown("### 📝 Reserve Your Slot")
     
     col1, col2 = st.columns(2)
@@ -88,7 +104,6 @@ def render_booking_system():
         
         st.success("🎉 Court booked successfully!")
         
-        # Access Pass Presentation Card
         with st.expander("🎫 Digital Security Gate & Court Pass", expanded=True):
             st.markdown(f"### 🎾 **{venue}**")
             st.write(f"**Date & Time:** {booking_date} | {time_slot}")
