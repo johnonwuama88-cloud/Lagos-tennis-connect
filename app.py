@@ -1,8 +1,11 @@
 import streamlit as st
-from bookings import render_court_bookings
-from referrals import get_or_set_referral_code, render_invite_friends_section
+
+# Import all modular page functions
+from bookings import render_booking_system
+from ladder import render_ladder
 from spectators import render_spectator_hub
-from ladder import render_ladder_hub
+from news import render_tennis_news_hub
+from referrals import render_referral_hub
 
 # Page Configuration
 st.set_page_config(
@@ -11,51 +14,40 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize referral check on application load
-get_or_set_referral_code()
-
-# App Header
+# App Title & Header
 st.title("🎾 Lagos Tennis Connect")
-st.caption("Connecting players, courts, and coaches across Lagos")
+st.caption("The ultimate community platform for Lagos tennis players — book courts, join rankings, watch matches & get pro tour updates.")
 
 # Sidebar Navigation
-page = st.sidebar.radio("Navigation", [
-    "Court Bookings", 
-    "Matchmaking", 
-    "Ladder & Rankings",
-    "Match Spectators", 
-    "Invite Friends", 
-    "Profile"
-])
+st.sidebar.image("https://img.icons8.com/color/96/tennis-.png", width=70)
+st.sidebar.title("Navigation")
 
-# Page Routing
-if page == "Court Bookings":
-    render_court_bookings(current_user="John O.")
+page = st.sidebar.selectbox(
+    "Choose a Module:",
+    [
+        "📅 Court Bookings",
+        "🏆 Ladder & Rankings",
+        "👀 Match Spectators",
+        "📰 Tennis News & Scores",
+        "🎁 Referrals & Rewards"
+    ]
+)
 
-elif page == "Matchmaking":
-    st.subheader("🎾 Player Matchmaking & Hitting Partners")
-    st.markdown("Find hitting partners at your skill level across Lagos.")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.text_input("Search Location", value="Ikoyi / Victoria Island")
-    with col2:
-        st.select_slider("Skill Level (NTRP)", options=["2.5", "3.0", "3.5", "4.0", "4.5", "5.0"])
-        
-    st.success("Matches available in your area!")
+st.sidebar.divider()
+st.sidebar.info("👤 **Active User:** John O. | 📍 **Location:** Lekki, Lagos")
 
-elif page == "Ladder & Rankings":
-    render_ladder_hub(current_user="John O.")
+# Route to selected page
+if page == "📅 Court Bookings":
+    render_booking_system()
 
-elif page == "Match Spectators":
+elif page == "🏆 Ladder & Rankings":
+    render_ladder()
+
+elif page == "👀 Match Spectators":
     render_spectator_hub(current_user="John O.")
 
-elif page == "Invite Friends":
-    render_invite_friends_section(user_id="JOHN101", user_name="John")
+elif page == "📰 Tennis News & Scores":
+    render_tennis_news_hub()
 
-elif page == "Profile":
-    st.subheader("👤 Player Profile")
-    st.write("**Name:** John Onwuama")
-    st.write("**Location:** Lagos, Nigeria")
-    st.write("**Reliability Score:** 98% (Trusted Member)")
-    st.write("**No-Show Strikes:** 0 / 3")
+elif page == "🎁 Referrals & Rewards":
+    render_referral_hub()
