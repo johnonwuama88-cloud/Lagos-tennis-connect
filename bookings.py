@@ -12,22 +12,41 @@ def render_booking_system():
     st.subheader("📅 Court Booking System & Gate Pass")
     st.caption("Reserve courts across Lagos, manage ball boy fees, and generate secure estate gate passes.")
 
+    # List of 22 Tennis Venues across Lagos
+    lagos_venues = [
+        "--- 🏝️ Island Venues (Ikoyi, VI, Lekki & Ajah) ---",
+        "Lagos Lawn Tennis Club (TBS / Onikan)",
+        "Ikoyi Club 1938 (Ikoyi)",
+        "Luik Tennis & Recreation Club (The Rock Drive, Lekki Phase 1)",
+        "Lekki Tennis Club / Arena Court (Gbolahan Owolabi St, Lekki 1)",
+        "Nicon Town Tennis Courts (Lekki Phase 1)",
+        "VGC Recreation Club (Victoria Garden City, Ajah)",
+        "Chevron Recreation Center (Lekki / Chevron Drive)",
+        "Eko Hotels & Suites Tennis Court (Victoria Island)",
+        "1004 Estate Tennis Courts (Victoria Island)",
+        "Lagos Country Club Annex (Parkview Estate, Ikoyi)",
+        "Banana Island Field & Tennis Courts (Ikoyi)",
+        
+        "--- 🏙️ Mainland Venues (Ikeja, Yaba, Surulere & Apapa) ---",
+        "Ikeja Country Club / Lagos Country Club (Ikeja GRA)",
+        "Dr. Philip Adegbile Sports Complex (Yabatech, Yaba)",
+        "Unilag Tennis Courts (Akoka, Yaba)",
+        "National Stadium Tennis Complex (Surulere)",
+        "Apapa Club - Tennis Section (Park Lane, Apapa)",
+        "Apapa City Club Tennis Court (Apapa)",
+        "ISL Tennis Courts (Unilag Campus, Yaba)",
+        "Civil Centre / Ikeja Recreation Club (GRA Ikeja)",
+        "Gbagada Sports Club (Gbagada Phase 2)",
+        "Command Day Secondary / Military Hospital Courts (Yaba/Ikeja)",
+        "Eagle Club Tennis Section (Surulere)"
+    ]
+
     # Reservation Selection Form
     col1, col2 = st.columns(2)
     
     with col1:
-        venue = st.selectbox(
-            "Select Venue / Club:",
-            [
-                "Ikoyi Club 1938 (Ikoyi)",
-                "Lagos Lawn Tennis Club (TBS / Onikan)",
-                "VGC Recreation Club (Victoria Garden City)",
-                "Nicon Town Tennis Courts (Lekki Phase 1)",
-                "Chevron Recreation Center (Gbagada / Lekki)",
-                "Ikeja Country Club (GRA Ikeja)"
-            ]
-        )
-        booking_date = st.date_input("Select Date")
+        venue = st.selectbox("Select Venue / Club in Lagos:", lagos_venues)
+        booking_date = st.date_input("Select Booking Date")
 
     with col2:
         time_slot = st.selectbox(
@@ -64,15 +83,19 @@ def render_booking_system():
 
     # Confirmation Action
     if st.button("Confirm Booking & Generate Digital Gate Pass", type="primary"):
-        access_code = generate_estate_code()
-        
-        st.success("🎉 Booking Confirmed successfully!")
-        
-        with st.expander("🎫 View Digital Court & Estate Gate Pass", expanded=True):
-            st.markdown(f"### 🎾 **{venue}**")
-            st.write(f"**Date & Time:** {booking_date} | {time_slot}")
-            st.write(f"**Court Assigned:** {court_num}")
-            st.write(f"**Ball Boy Requested:** {'Yes' if include_ball_boy else 'No'}")
+        # Prevent section headers from being submitted
+        if venue.startswith("---"):
+            st.warning("Please select a valid venue from the list.")
+        else:
+            access_code = generate_estate_code()
             
-            st.info(f"🔑 **Estate / Security Gate Access Code:** `{access_code}`")
-            st.caption("Show this code to security personnel at the estate gate for entry.")
+            st.success("🎉 Booking Confirmed successfully!")
+            
+            with st.expander("🎫 View Digital Court & Estate Gate Pass", expanded=True):
+                st.markdown(f"### 🎾 **{venue}**")
+                st.write(f"**Date & Time:** {booking_date} | {time_slot}")
+                st.write(f"**Court Assigned:** {court_num}")
+                st.write(f"**Ball Boy Requested:** {'Yes' if include_ball_boy else 'No'}")
+                
+                st.info(f"🔑 **Estate / Security Gate Access Code:** `{access_code}`")
+                st.caption("Show this code to security personnel at the estate gate for entry.")
