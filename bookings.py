@@ -2,17 +2,24 @@ import streamlit as st
 import pandas as pd
 import random
 import string
-from streamlit_gsheets import GSheetsConnection  # type: ignore
+import os
 
 def generate_estate_code():
     """Generates a secure 6-character estate access code."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
+# Mapping venue options to your exact local images in the assets folder
+VENUE_IMAGES = {
+    "Lagos Lawn Tennis Club (TBS / Onikan)": "assets/lagos_lawn_tennis_club.jpg",
+    "Ikoyi Club 1938 (Ikoyi)": "assets/Ikoyi_club.jpg",
+    "Luik Tennis & Recreation Club (The Rock Drive, Lekki Phase 1)": "assets/Luik_tennis.jpg",
+    "Lekki Tennis Club / Arena Court (Gbolahan Owolabi St, Lekki 1)": "assets/Lekki_tennis_club.jpg",
+}
+
 def render_booking_system():
     st.subheader("📅 Court Booking System & Gate Pass")
     st.caption("Reserve courts across Lagos, manage ball boy fees, and generate secure estate gate passes.")
 
-    # List of 22 Tennis Venues across Lagos
     lagos_venues = [
         "--- 🏝️ Island Venues (Ikoyi, VI, Lekki & Ajah) ---",
         "Lagos Lawn Tennis Club (TBS / Onikan)",
@@ -41,7 +48,6 @@ def render_booking_system():
         "Eagle Club Tennis Section (Surulere)"
     ]
 
-    # Reservation Selection Form
     col1, col2 = st.columns(2)
     
     with col1:
@@ -55,9 +61,20 @@ def render_booking_system():
         )
         court_num = st.selectbox("Court Number:", ["Court 1 (Center)", "Court 2", "Court 3", "Court 4"])
 
+    # Interactive Venue Photo Preview
+    if venue in VENUE_IMAGES:
+        img_path = VENUE_IMAGES[venue]
+        if os.path.exists(img_path):
+            st.markdown("#### 🏟️ Court Facility Preview")
+            st.image(img_path, caption=f"Photo: {venue}", use_container_width=True)
+        else:
+            st.warning(f"⚠️ Image file `{img_path}` not found in assets folder.")
+    elif not venue.startswith("---"):
+        st.info(f"📸 Image preview slot ready for **{venue}**. Add an image to `assets/` to display it here.")
+
     st.divider()
 
-    # Operations & Fee Breakdown
+    # Payment & Fee Allocation
     st.markdown("### 💳 Payment & Operations Split")
     
     col_a, col_b, col_c = st.columns(3)
@@ -81,9 +98,8 @@ def render_booking_system():
 
     st.markdown("---")
 
-    # Confirmation Action
+    # Booking Confirmation & Gate Pass Generator
     if st.button("Confirm Booking & Generate Digital Gate Pass", type="primary"):
-        # Prevent section headers from being submitted
         if venue.startswith("---"):
             st.warning("Please select a valid venue from the list.")
         else:
