@@ -1,16 +1,20 @@
 import streamlit as st
 
-# In-memory database simulation for ladder rankings
-if "ladder_db" not in st.session_state:
-    st.session_state["ladder_db"] = [
-        {"rank": 1, "name": "Chidi M.", "ntrp": "4.5", "points": 1250, "record": "14-2"},
-        {"rank": 2, "name": "John O.", "ntrp": "4.0", "points": 1120, "record": "12-4"},
-        {"rank": 3, "name": "Sola A.", "ntrp": "4.0", "points": 980, "record": "10-5"},
-        {"rank": 4, "name": "Fatima K.", "ntrp": "3.5", "points": 850, "record": "9-6"},
-        {"rank": 5, "name": "Emeka N.", "ntrp": "3.5", "points": 720, "record": "7-8"}
-    ]
+def init_ladder_db():
+    """Ensures ladder_db is always initialized in session state."""
+    if "ladder_db" not in st.session_state or not st.session_state["ladder_db"]:
+        st.session_state["ladder_db"] = [
+            {"rank": 1, "name": "Chidi M.", "ntrp": "4.5", "points": 1250, "record": "14-2"},
+            {"rank": 2, "name": "John O.", "ntrp": "4.0", "points": 1120, "record": "12-4"},
+            {"rank": 3, "name": "Sola A.", "ntrp": "4.0", "points": 980, "record": "10-5"},
+            {"rank": 4, "name": "Fatima K.", "ntrp": "3.5", "points": 850, "record": "9-6"},
+            {"rank": 5, "name": "Emeka N.", "ntrp": "3.5", "points": 720, "record": "7-8"}
+        ]
 
 def render_ladder_hub(current_user="John O."):
+    # Always ensure database initialization
+    init_ladder_db()
+    
     st.subheader("🏆 Lagos Tennis Connect — Official Ladder")
     st.markdown("Climb the ranks by challenging players above you and logging match results.")
     
