@@ -1,4 +1,5 @@
 import streamlit as st
+from bookings import render_court_bookings
 from referrals import get_or_set_referral_code, render_invite_friends_section
 from spectators import render_spectator_hub
 from ladder import render_ladder_hub
@@ -29,15 +30,7 @@ page = st.sidebar.radio("Navigation", [
 
 # Page Routing
 if page == "Court Bookings":
-    st.subheader("🏟️ Court Bookings & Reservations")
-    st.markdown("Reserve slots at top tennis facilities across Lagos.")
-    
-    court = st.selectbox("Select Tennis Club", ["Ikoyi Club 1938", "Lagos Country Club", "VGC Tennis Club", "Eko Hotel Tennis Courts"])
-    date = st.date_input("Select Date")
-    time_slot = st.selectbox("Select Time Slot", ["07:00 AM - 08:00 AM", "08:00 AM - 09:00 AM", "04:00 PM - 05:00 PM", "05:00 PM - 06:00 PM"])
-    
-    if st.button("Proceed to Paystack Checkout"):
-        st.info(f"Booking {court} for {date} at {time_slot}. Initializing Paystack Split Payment...")
+    render_court_bookings(current_user="John O.")
 
 elif page == "Matchmaking":
     st.subheader("🎾 Player Matchmaking & Hitting Partners")
@@ -64,4 +57,5 @@ elif page == "Profile":
     st.subheader("👤 Player Profile")
     st.write("**Name:** John Onwuama")
     st.write("**Location:** Lagos, Nigeria")
-    st.write("**Preferred Hand:** Right-handed")
+    st.write("**Reliability Score:** 98% (Trusted Member)")
+    st.write("**No-Show Strikes:** 0 / 3")

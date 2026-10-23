@@ -4,26 +4,36 @@ import random
 
 def render_court_bookings(current_user="John O."):
     st.subheader("🏟️ Court Bookings & Digital Passes")
-    st.markdown("Reserve top courts across Lagos. Your booking instantly generates a verifiable Digital Pass for gate guards and stewards.")
+    st.markdown("Reserve top courts across Lagos. Your booking instantly generates a verifiable Digital Pass for gate guards and court stewards.")
     
-    with st.form("booking_form"):
-        club = st.selectbox("Select Tennis Facility", [
+    # Facility Selection Outside the Form for Instant Dynamic Feedback
+    club = st.selectbox(
+        "Select Tennis Facility", 
+        [
             "Ikoyi Club 1938 (Ikoyi)", 
             "Lagos Country Club (Ikeja)", 
             "VGC Tennis Club (Victoria Garden City)", 
             "Eko Hotel Tennis Courts (VI)"
-        ])
-        
-        # Check if club requires an estate access code
-        requires_estate_code = "VGC" in club or "Garden City" in club
-        estate_code = ""
-        if requires_estate_code:
-            st.info("🔒 This facility is inside a gated estate. A visitor access code is required for gate entry.")
-            estate_code = st.text_input("Estate Visitor Access Code", value=f"VGC-{random.randint(1000,9999)}")
-        
+        ]
+    )
+    
+    # Check if facility is inside a gated estate
+    requires_estate_code = "VGC" in club or "Garden City" in club
+    default_gate_code = f"VGC-{random.randint(1000, 9999)}" if requires_estate_code else ""
+
+    if requires_estate_code:
+        st.warning("🔒 **Gated Estate Facility:** This court requires a visitor gate pass for entry.")
+    
+    # Booking Details Form
+    with st.form("booking_form"):
         date = st.date_input("Select Booking Date")
         time_slot = st.selectbox("Select Time Slot", ["07:00 AM - 08:00 AM", "08:00 AM - 09:00 AM", "04:00 PM - 05:00 PM", "05:00 PM - 06:00 PM"])
         
+        if requires_estate_code:
+            estate_code = st.text_input("Visitor Gate Access Code", value=default_gate_code)
+        else:
+            estate_code = None
+            
         include_ball_boy = st.checkbox("Include Official Ball Boy & Attendant Fee (+ ₦1,500 split payment)", value=True)
         
         submit_booking = st.form_submit_button("Proceed to Paystack Split Checkout")
@@ -36,31 +46,33 @@ def render_court_bookings(current_user="John O."):
                 "date": str(date),
                 "time": time_slot,
                 "user": current_user,
-                "estate_code": estate_code if requires_estate_code else None,
+                "estate_code": estate_code,
                 "ball_boy": include_ball_boy
             }
-            st.success("Payment successful via Paystack! Digital Court Pass generated.")
-    
-    # Display Digital Pass if available
+            st.success("Payment successful via Paystack! Digital Court Pass generated below.")
+
+    # Display Active Digital Pass if booking exists
     if "latest_booking" in st.session_state:
         b = st.session_state["latest_booking"]
         st.markdown("---")
         st.markdown("### 🎫 Your Active Digital Court Pass")
         
-        pass_summary = (
-            f"🎾 *LAGOS TENNIS CONNECT — OFFICIAL PASS*\n\n"
-            f"• *Booking ID:* {b['id']}\n"
+        pass_text = (
+            f"🎾 *LAGOS TENNIS CONNECT — DIGITAL COURT PASS*\n\n"
+            f"• *Pass ID:* {b['id']}\n"
             f"• *Facility:* {b['club']}\n"
             f"• *Date & Time:* {b['date']} | {b['time']}\n"
             f"• *Player:* {b['user']}\n"
         )
         if b['estate_code']:
-            pass_summary += f"• *Estate Gate Code:* `{b['estate_code']}`\n"
-        pass_summary += f"• *Status:* PAID & VERIFIED (Paystack)"
+            pass_text += f"• *Estate Gate Code:* `{b['estate_code']}`\n"
         
-        st.info(pass_summary)
+        pass_text += f"• *Ball Boy Fee:* {'Included' if b['ball_boy'] else 'Not Included'}\n"
+        pass_text += f"• *Status:* PAID & VERIFIED (Paystack Escrow)"
         
-        # WhatsApp share button for the pass
-        wa_pass_text = f"{pass_summary}\n\n*Note to Gate Guard / Steward:* Please verify this digital pass for court entry."
-        wa_pass_url = f"https://wa.me/?text={urllib.parse.quote(wa_pass_text)}"
-        st.link_button("📲 Send Pass to WhatsApp / Gate Guard", wa_pass_url, use_container_width=True)
+        st.info(pass_text)
+        
+        # WhatsApp Share Button
+        wa_text = f"{pass_text}\n\n*Gate Guard / Steward Notice:* Please present this digital pass upon arrival at the facility."
+        wa_url = f"https://wa.me/?text={urllib.parse.quote(wa_text)}"
+        st.link_button("📲 Share Pass to WhatsApp / Gate Security", wa_url, use_container_width=True)
