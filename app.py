@@ -15,65 +15,68 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling (CSS Injection)
+# High-Contrast Custom Styling (CSS Injection)
 st.markdown("""
 <style>
-    /* Main Background & Font Tweaks */
+    /* Global App Background & High-Contrast Text */
     .stApp {
-        background-color: #0e1117;
+        background-color: #111827;
+        color: #f9fafb !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Ensure all markdown text and paragraphs are bright and legible */
+    p, span, label, .stMarkdown, div {
+        color: #f3f4f6 !important;
     }
     
     /* Hero Banner Styling */
     .hero-container {
-        background: linear-gradient(135deg, #0d3b66 0%, #001f3f 50%, #004d40 100%);
+        background: linear-gradient(135deg, #1e3a8a 0%, #111827 60%, #065f46 100%);
         border-radius: 16px;
-        padding: 28px;
+        padding: 30px;
         margin-bottom: 25px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        border: 1px solid #374151;
     }
     
     .hero-title {
-        color: #ffffff;
-        font-size: 2.2rem;
+        color: #ffffff !important;
+        font-size: 2.3rem;
         font-weight: 800;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         letter-spacing: -0.5px;
     }
     
     .hero-subtitle {
-        color: #00e676;
-        font-size: 1.1rem;
-        font-weight: 500;
+        color: #34d399 !important;
+        font-size: 1.15rem;
+        font-weight: 600;
         margin-bottom: 0px;
     }
     
-    /* Custom Badge Indicator */
+    /* Custom Status Badge */
     .status-badge {
-        background-color: rgba(0, 230, 118, 0.15);
-        color: #00e676;
-        padding: 4px 12px;
+        background-color: rgba(52, 211, 153, 0.2);
+        color: #34d399 !important;
+        padding: 6px 14px;
         border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border: 1px solid rgba(0, 230, 118, 0.3);
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: 1px solid #34d399;
         display: inline-block;
-    }
-    
-    /* Card Container for Venue Photos & Components */
-    .court-card {
-        background-color: #1a1f2c;
-        border-radius: 12px;
-        padding: 16px;
-        border: 1px solid #2d3748;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
     /* Metric Card Polish */
     [data-testid="stMetricValue"] {
-        font-weight: 700 !important;
-        color: #00e676 !important;
+        font-weight: 800 !important;
+        color: #34d399 !important;
+    }
+    
+    /* Sidebar Styling Override */
+    [data-testid="stSidebar"] {
+        background-color: #0b0f19;
+        border-right: 1px solid #1f2937;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -93,7 +96,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar Styling & Navigation
+# Sidebar Navigation
 st.sidebar.image("https://img.icons8.com/color/96/tennis-.png", width=65)
 st.sidebar.title("Navigation")
 
