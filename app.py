@@ -1,6 +1,7 @@
 import streamlit as st
 from referrals import get_or_set_referral_code, render_invite_friends_section
 from spectators import render_spectator_hub
+from ladder import render_ladder_hub
 
 # Page Configuration
 st.set_page_config(
@@ -20,6 +21,7 @@ st.caption("Connecting players, courts, and coaches across Lagos")
 page = st.sidebar.radio("Navigation", [
     "Court Bookings", 
     "Matchmaking", 
+    "Ladder & Rankings",
     "Match Spectators", 
     "Invite Friends", 
     "Profile"
@@ -38,7 +40,7 @@ if page == "Court Bookings":
         st.info(f"Booking {court} for {date} at {time_slot}. Initializing Paystack Split Payment...")
 
 elif page == "Matchmaking":
-    st.subheader("🎾 Player Matchmaking & Ladder")
+    st.subheader("🎾 Player Matchmaking & Hitting Partners")
     st.markdown("Find hitting partners at your skill level across Lagos.")
     
     col1, col2 = st.columns(2)
@@ -48,6 +50,9 @@ elif page == "Matchmaking":
         st.select_slider("Skill Level (NTRP)", options=["2.5", "3.0", "3.5", "4.0", "4.5", "5.0"])
         
     st.success("Matches available in your area!")
+
+elif page == "Ladder & Rankings":
+    render_ladder_hub(current_user="John O.")
 
 elif page == "Match Spectators":
     render_spectator_hub(current_user="John O.")
