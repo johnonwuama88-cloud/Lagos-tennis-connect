@@ -1,5 +1,5 @@
 import streamlit as st
-import feedparser
+import feedparser  # type: ignore
 
 @st.cache_data(ttl=1800) # Cache for 30 minutes to ensure fast load times and save bandwidth
 def fetch_live_tennis_news():
