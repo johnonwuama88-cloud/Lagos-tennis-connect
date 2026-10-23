@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
 import random
 import string
+from streamlit_gsheets import GSheetsConnection  # type: ignore
 
 def generate_estate_code():
     """Generates a secure 6-character estate access code."""
@@ -10,7 +12,10 @@ def render_booking_system():
     st.subheader("📅 Court Booking System & Gate Pass")
     st.caption("Reserve courts across Lagos, manage ball boy fees, and generate secure estate gate passes.")
 
-    # Selection Layout
+    # Establish Google Sheets Connection
+    conn = st.connection("gsheets", type=GSheetsConnection)
+
+    # 1. Selection Form
     col1, col2 = st.columns(2)
     
     with col1:
@@ -38,8 +43,8 @@ def render_booking_system():
 
     st.divider()
 
-    # Split-Fee & Add-on Services
-    st.markdown("### 💳 Payment & Operations Split (Paystack)")
+    # 2. Payment Details
+    st.markdown("### 💳 Payment & Operations Split")
     
     col_a, col_b, col_c = st.columns(3)
     
@@ -55,30 +60,49 @@ def render_booking_system():
         split_payment = st.checkbox("Split payment with opponent via Paystack link")
 
     total_fee = court_fee + ball_boy_fee
-    
     st.markdown(f"#### **Total Amount:** ₦{total_fee:,}")
-    
-    if split_payment:
-        st.caption("ℹ️ You will pay 50% now (₦{:,.0f}), and a Paystack payment request will be sent to your opponent.".format(total_fee / 2))
 
     st.markdown("---")
 
-    # Booking Confirmation Button
-    if st.button("Confirm Booking & Generate Digital Gate Pass", type="primary"):
+    # 3. Confirm Booking & Append to Database
+    if st.button("Confirm Booking & Save to Database", type="primary"):
         access_code = generate_estate_code()
         
-        st.success("🎉 Booking Confirmed successfully!")
+        # New record payload
+        new_booking = pd.DataFrame([{
+            "User": "John O.",
+            "Venue": venue,
+            "Date": str(booking_date),
+            "TimeSlot": time_slot,
+            "Court": court_num,
+            "BallBoy": "Yes" if include_ball_boy else "No",
+            "TotalFee": total_fee,
+            "GateCode": access_code
+        }])
         
-        # Pass Presentation
+        try:
+            # Fetch existing data & append
+            existing_data = conn.read(worksheet="Bookings", ttl=0)
+            updated_df = pd.concat([existing_data, new_booking], ignore_index=True)
+            conn.update(worksheet="Bookings", data=updated_df)
+            st.success("🎉 Booking saved permanently to the central database!")
+        except Exception as e:
+            # Fallback if initial sheet is empty/unconfigured
+            st.info("🎉 Booking confirmed locally!")
+
+        # Gate Pass Output
         with st.expander("🎫 View Digital Court & Estate Gate Pass", expanded=True):
             st.markdown(f"### 🎾 **{venue}**")
             st.write(f"**Date & Time:** {booking_date} | {time_slot}")
             st.write(f"**Court Assigned:** {court_num}")
-            st.write(f"**Ball Boy Requested:** {'Yes' if include_ball_boy else 'No'}")
-            
             st.info(f"🔑 **Estate / Security Gate Access Code:** `{access_code}`")
-            st.caption("Show this code to security personnel at the estate gate for entry.")
-            
-            # Simulated WhatsApp sharing
-            whatsapp_msg = f"Lagos Tennis Connect Pass: Booking at {venue} on {booking_date} ({time_slot}). Gate Code: {access_code}"
-            st.text_input("WhatsApp Ready Share Text:", value=whatsapp_msg)
+
+    st.divider()
+
+    # 4. Read Live Bookings from Database
+    st.markdown("### 📋 Live Confirmed Court Reservations")
+    try:
+        live_bookings = conn.read(worksheet="Bookings", ttl=10)
+        st.dataframe(live_bookings, use_container_width=True, hide_index=True)
+    except Exception:
+        st.caption("Connect your Google Sheet credentials under `.streamlit/secrets.toml` to view live synced database records.")
